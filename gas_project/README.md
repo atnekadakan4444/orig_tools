@@ -6,6 +6,15 @@
 | 2024/12/13 | 追加： attend_system / attend_system |
 
 
+## apps_script
+## render_sleep_measures
+* [プログラミングスクールで作成したPF](https://github.com/Hanakus0/ideas_collection)の Render.com のスリープ対策として使用
+* トリガーを設けることで自動化
+* 以下、実装内容
+  1. 10分毎に指定のURLへリクエストを送信する
+     1. 15分放置でスリープモードになるため
+  2. トリガーの使用制限に引っかからないように毎回削除
+
 ## google_form
 ### attend_system
 * プログラミングスクール内の定期勉強会で使用
