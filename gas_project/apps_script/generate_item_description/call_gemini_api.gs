@@ -2,25 +2,20 @@
  * GeminiAPIに画像、プロンプトを含めてリクエストを送信
  */
 function callGeminiApi(apiKey, sendPrompt, itemImages) {
-  // 全ての画像をBase64形式の配列に変換
-  const imageBase64Array = itemImages.map((file) =>
-    Utilities.base64Encode(file.getBlob().getBytes())
-  );
-
-  // プロンプトと複数枚の画像を格納
-  const parts = [{ text: sendPrompt }];
-  for (const b64 of imageBase64Array) {
-    parts.push({
-      inline_data: {
-        mime_type: "image/jpeg",
-        data: b64,
-      },
-    });
-  }
+  // プロンプトと、各画像のデータをまとめる
+  const textPart = { text: sendPrompt };
+  const imageParts = itemImages.map((file) => ({
+    inline_data: {
+      mime_type: file.getBlob().getContentType(), // file.getMimeType() でも可
+      data: Utilities.base64Encode(file.getBlob().getBytes()),
+    },
+  }));
 
   // リクエスト先とリクエスト内容の指定
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-  const payload = { contents: [{ parts: parts }] };
+  const payload = {
+    contents: [{ parts: [textPart, ...imageParts] }],
+  };
   const options = {
     method: "POST",
     contentType: "application/json",
