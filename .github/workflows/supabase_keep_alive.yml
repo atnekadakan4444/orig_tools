@@ -16,7 +16,7 @@ jobs:
       - name: Ping Supabase Database
         run: |
 
-          TABLE_TO_CHECK="user"
+          TABLE_TO_CHECK="public.user"
 
           http_status=$(curl -s -o /dev/null -w "%{http_code}" \
             "${{ secrets.SUPABASE_URL }}/rest/v1/${TABLE_TO_CHECK}?select=*&limit=1" \
