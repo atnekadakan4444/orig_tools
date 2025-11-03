@@ -16,3 +16,10 @@ jobs:
         run: |
           http_status=$(curl -s -o /dev/null -w "%{http_code}" \
             "${{ secrets.RENDER_SERVICE_URL }}")
+
+          if [ $http_status -ge 200 ] && [ $http_status -lt 400 ]; then
+            echo "Success: Supabase is active and responding. Status: $http_status"
+          else
+            echo "::error::Failed to ping Supabase. Status: $http_status"
+            exit 1 # ワークフローを「失敗」させる
+          fi

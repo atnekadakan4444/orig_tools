@@ -20,3 +20,10 @@ jobs:
             "${{ secrets.SUPABASE_URL }}/rest/v1/${TABLE_TO_CHECK}?select=*&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_API_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_API_KEY }}")
+
+          if [ $http_status -ge 200 ] && [ $http_status -lt 400 ]; then
+            echo "Success: Supabase is active and responding."
+          else
+            echo "::error::Failed to ping Supabase. Status: $http_status"
+            exit 1
+          fi
