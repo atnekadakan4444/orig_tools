@@ -1,4 +1,4 @@
-name: Supabase Health Check (Keep-Alive)
+name: Supabase Keep-Alive
 
 on:
   schedule:
