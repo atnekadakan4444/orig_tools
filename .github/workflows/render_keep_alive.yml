@@ -2,9 +2,7 @@ name: Render Keep-Alive
 
 on:
   schedule:
-    # Renderの15分スリープタイマーを回避するため、14分ごとに実行
-    # (注意: 実行時間の消費が非常に激しいです。後述の注意点を必ず読んでください)
-    - cron: '*/13 * * * *'
+    - cron: '*/10 * * * *'
   
   workflow_dispatch:
     # Actionsタブから手動で実行するため
