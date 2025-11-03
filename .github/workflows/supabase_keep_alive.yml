@@ -15,11 +15,6 @@ jobs:
     steps:
       - name: Ping Supabase Database
         run: |
-
-          # curlを使ってAPIにリクエストを送信し、HTTPステータスコードを取得
-          # -s: サイレントモード (進捗非表示)
-          # -o /dev/null: レスポンスボディは捨てる (不要なため)
-          # -w "%{http_code}": ステータスコードだけを出力する
           http_status=$(curl -s -o /dev/null -w "%{http_code}" \
             "${{ secrets.SUPABASE_URL }}/rest/v1/${TABLE_TO_CHECK}?select=*&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_API_KEY }}" \

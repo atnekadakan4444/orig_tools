@@ -15,8 +15,5 @@ jobs:
     steps:
       - name: Ping Render Service
         run: |
-
-          # curlでリクエストを送信し、HTTPステータスコードを取得
-          # --fail オプションで 4xx や 5xx の場合にエラー（exit 1）とする
           http_status=$(curl -s -o /dev/null -w "%{http_code}" \
             "${{ secrets.RENDER_SERVICE_URL }}")
