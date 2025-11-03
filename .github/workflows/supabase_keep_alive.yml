@@ -12,6 +12,7 @@ on:
 jobs:
   ping-supabase:
     runs-on: ubuntu-latest
+    environment: keep_alive
     steps:
       - name: Ping Supabase Database
         run: |

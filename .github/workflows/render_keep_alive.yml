@@ -12,6 +12,7 @@ on:
 jobs:
   ping-render-service:
     runs-on: ubuntu-latest
+    environment: keep_alive
     steps:
       - name: Ping Render Service
         run: |
