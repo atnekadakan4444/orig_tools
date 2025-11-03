@@ -5,7 +5,7 @@ on:
     # 3日ごとの午前0時 (UTC) に実行
     # 7日間のスリープ制限を回避するために十分な間隔です
     - cron: '0 0 */3 * *'
-  
+
   workflow_dispatch:
     # Actionsタブから手動で実行するためにも使えます
 
@@ -15,12 +15,9 @@ jobs:
     steps:
       - name: Ping Supabase Database
         run: |
-          # 
-          # ----------------------------------------------------
-          # ↓↓↓ 'user' を実在するテーブル名に変更してください ↓↓↓
-          # ----------------------------------------------------
+
           TABLE_TO_CHECK="user"
-          
+
           echo "Pinging table: $TABLE_TO_CHECK"
 
           # curlを使ってAPIにリクエストを送信し、HTTPステータスコードを取得
@@ -34,14 +31,12 @@ jobs:
 
           echo "Ping complete. HTTP Status received: $http_status"
 
-          # 
           # ステータスコードをチェック
           # 200番台 (例: 200 OK) または 300番台 (例: 304 Not Modified) なら成功とみなす
-          #
           if [ $http_status -ge 200 ] && [ $http_status -lt 400 ]; then
             echo "Success: Supabase is active and responding."
           else
             echo "::error::Failed to ping Supabase. Status: $http_status"
             echo "Please check Supabase status or GitHub Secrets."
-            exit 1 # ワークフローを「失敗」させる
+            exit 1
           fi
