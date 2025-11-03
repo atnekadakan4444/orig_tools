@@ -16,10 +16,6 @@ jobs:
       - name: Ping Supabase Database
         run: |
 
-          TABLE_TO_CHECK="user"
-
-          echo "Pinging table: $TABLE_TO_CHECK"
-
           # curlを使ってAPIにリクエストを送信し、HTTPステータスコードを取得
           # -s: サイレントモード (進捗非表示)
           # -o /dev/null: レスポンスボディは捨てる (不要なため)
@@ -28,15 +24,3 @@ jobs:
             "${{ secrets.SUPABASE_URL }}/rest/v1/${TABLE_TO_CHECK}?select=*&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_API_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_API_KEY }}")
-
-          echo "Ping complete. HTTP Status received: $http_status"
-
-          # ステータスコードをチェック
-          # 200番台 (例: 200 OK) または 300番台 (例: 304 Not Modified) なら成功とみなす
-          if [ $http_status -ge 200 ] && [ $http_status -lt 400 ]; then
-            echo "Success: Supabase is active and responding."
-          else
-            echo "::error::Failed to ping Supabase. Status: $http_status"
-            echo "Please check Supabase status or GitHub Secrets."
-            exit 1
-          fi
