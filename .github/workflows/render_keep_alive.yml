@@ -1,0 +1,34 @@
+name: Render Keep-Alive
+
+on:
+  schedule:
+    # Renderの15分スリープタイマーを回避するため、14分ごとに実行
+    # (注意: 実行時間の消費が非常に激しいです。後述の注意点を必ず読んでください)
+    - cron: '*/13 * * * *'
+  
+  workflow_dispatch:
+    # Actionsタブから手動で実行するため
+
+jobs:
+  ping-render-service:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Service
+        run: |
+          echo "Pinging Render service to prevent sleep..."
+          
+          # curlでリクエストを送信し、HTTPステータスコードを取得
+          # --fail オプションで 4xx や 5xx の場合にエラー（exit 1）とする
+          http_status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.RENDER_SERVICE_URL }}")
+
+          echo "Ping complete. HTTP Status received: $http_status"
+
+          # ステータスコードをチェック (2xx or 3xxなら成功)
+          if [ $http_status -ge 200 ] && [ $http_status -lt 400 ]; then
+            echo "Success: Render service is active and responding."
+          else
+            echo "::error::Failed to ping Render service. Status: $http_status"
+            echo "Please check your RENDER_SERVICE_URL secret or the service logs."
+            exit 1 # ワークフローを「失敗」させる
+          fi
