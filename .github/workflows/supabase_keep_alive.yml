@@ -1,27 +1,27 @@
-name: Supabase Keep-Alive
+# name: Supabase Keep-Alive
 
-on:
-  schedule:
-    - cron: "0 0 * * *"
+# on:
+#   schedule:
+#     - cron: "0 0 * * *"
 
-  workflow_dispatch:
-    # Actionsタブから手動で実行するためにも使えます
+#   workflow_dispatch:
+#     # Actionsタブから手動で実行するためにも使えます
 
-jobs:
-  ping-supabase:
-    runs-on: ubuntu-latest
-    environment: keep_alive
-    steps:
-      - name: Ping Supabase Database
-        run: |
-          http_status=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/${TABLE_TO_CHECK}?select=*&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_API_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_API_KEY }}")
+# jobs:
+#   ping-supabase:
+#     runs-on: ubuntu-latest
+#     environment: keep_alive
+#     steps:
+#       - name: Ping Supabase Database
+#         run: |
+#           http_status=$(curl -s -o /dev/null -w "%{http_code}" \
+#             "${{ secrets.SUPABASE_URL }}/rest/v1/${TABLE_TO_CHECK}?select=*&limit=1" \
+#             -H "apikey: ${{ secrets.SUPABASE_API_KEY }}" \
+#             -H "Authorization: Bearer ${{ secrets.SUPABASE_API_KEY }}")
 
-          if [ $http_status -ge 200 ] && [ $http_status -lt 400 ]; then
-            echo "Success: Supabase is active and responding."
-          else
-            echo "::error::Failed to ping Supabase. Status: $http_status"
-            exit 1
-          fi
+#           if [ $http_status -ge 200 ] && [ $http_status -lt 400 ]; then
+#             echo "Success: Supabase is active and responding."
+#           else
+#             echo "::error::Failed to ping Supabase. Status: $http_status"
+#             exit 1
+#           fi
