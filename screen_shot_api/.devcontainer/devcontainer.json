@@ -1,0 +1,50 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+	"name": "Ubuntu",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/base:noble",
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	"features": {
+		// Claude Codeの実行に必要なNode.js
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "lts"
+		},
+		// Ruby環境
+		"ghcr.io/devcontainers/features/ruby:1": {
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+			"version": "latest",
+			"enableNonRootDocker": "true",
+			"moby": "true"
+		},
+		// Claude Codeがリポジトリの履歴を読み取るために最新のGitを確保
+		"ghcr.io/devcontainers/features/git:1": {
+			"version": "latest",
+			"ppa": "false"
+		}
+	},
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "uname -a",
+	// Configure tool-specific properties.
+	// VSCode拡張機能の指定
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				// 例: "saoudrizwan.claude-dev" など
+				"anthropic.claude-code",
+				// DockerコンテナをVS Code上から管理・確認しやすくなる標準拡張機能
+				"ms-azuretools.vscode-docker",
+				// Rubyのコード補完やフォーマット用
+				"Shopify.ruby-lsp"
+			]
+		}
+	},
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
+	// claude導入
+	"postCreateCommand": "npm install -g @anthropic-ai/claude-code"
+}

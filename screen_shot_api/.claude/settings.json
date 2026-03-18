@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rails -v)",
+      "Bash(sudo gem:*)",
+      "Bash(rails new:*)",
+      "Bash(sudo bundle:*)",
+      "Bash(bundle install:*)",
+      "Bash(bundle exec:*)",
+      "Read(//var/lib/gems/3.2.0/gems/ferrum-0.17.1/lib/ferrum/page/**)",
+      "Bash(chromium-browser --version)",
+      "Bash(chromium --version)",
+      "Bash(dpkg -l)",
+      "Bash(wget -q -O - https://dl.google.com/linux/linux_signing_key.pub)",
+      "Bash(sudo tee:*)",
+      "Bash(dpkg --print-architecture)",
+      "Bash(sudo rm:*)",
+      "Bash(sudo snap:*)",
+      "Bash(npx @puppeteer/browsers install chromium@latest --path /tmp/chromium)",
+      "Bash(/tmp/chromium/chromium/linux_arm-1601193/chrome-linux/chrome --version --no-sandbox)",
+      "Bash(npx @puppeteer/browsers install chromium@latest --path /tmp/chromium --platform linux_arm64)",
+      "Bash(npx playwright:*)",
+      "Bash(sudo npx:*)",
+      "Bash(npm install:*)",
+      "Read(//home/vscode/.cache/ms-playwright/**)",
+      "Bash(/home/vscode/.cache/ms-playwright/chromium-1208/chrome-linux/chrome --version --no-sandbox)",
+      "Bash(FERRUM_BROWSER_PATH=/home/vscode/.cache/ms-playwright/chromium-1208/chrome-linux/chrome bundle exec ruby -e \":*)",
+      "Bash(BROWSER_PATH=/home/vscode/.cache/ms-playwright/chromium-1208/chrome-linux/chrome bundle exec ruby -e \":*)",
+      "Bash(curl -s -o /tmp/screenshot_test.jpg -w \"%{http_code} %{size_download}\" -X POST http://localhost:3000/api/screenshots -d \"url=https://example.com\")",
+      "Read(//tmp/**)",
+      "Bash(curl -s -X POST http://localhost:3000/api/screenshots)",
+      "Bash(curl -s -X POST http://localhost:3000/api/screenshots -d \"url=notaurl\")",
+      "Bash(kill %1)",
+      "Bash(wait)"
+    ]
+  }
+}

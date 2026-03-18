@@ -1,42 +1,24 @@
-# フルスクリーンショット取得API 要件定義・設計書
+# README
 
-## 1. システム概要
+This README would normally document whatever steps are necessary to get the
+application up and running.
 
-指定されたURLのWebページ全体をヘッドレスブラウザで読み込み、遅延読み込み（Lazy Loading）コンテンツを描画した上でスクリーンショット（10MB未満）を取得するRails API
+Things you may want to cover:
 
----
+* Ruby version
 
-## 2. 技術スタック・利用Gem
+* System dependencies
 
-| カテゴリ | 技術 |
-|---|---|
-| フレームワーク | Ruby on Rails |
-| ヘッドレスブラウザ操作 | `ferrum`（Ruby専用ヘッドレスChrome操作ライブラリ） |
-| インフラ / デプロイ先 | Google Cloud Run（Dockerコンテナ） |
+* Configuration
 
----
+* Database creation
 
-## 3. コア機能要件（API仕様）
+* Database initialization
 
-- **エンドポイント:** `POST /api/screenshots`
-- **リクエストパラメータ:**
-  - `url`（String）: 対象サイトのURL
-- **レスポンス:**
-  - 成功時: `image/jpeg`（バイナリデータを直接返却）
-  - 失敗時: JSON形式のエラーメッセージ（`{ "error": "..." }`）と適切なHTTPステータスコード
+* How to run the test suite
 
-### 4. 遅延読み込み（Lazy Loading）対応
+* Services (job queues, cache servers, search engines, etc.)
 
-ページ読み込み後、JavaScriptを実行して画面下部に向かって一定量ずつ（例: 200pxずつ、150ms間隔で）自動スクロールを行う。スクロール完了後、画像の描画やアニメーション完了のために2秒間待機（`sleep 2`）してから撮影する。
+* Deployment instructions
 
-### 5 ファイルサイズ制約（10MB未満）への対策
-
-Discordのアップロード制限を回避するため、以下の対策を講じて出力サイズを抑制する。
-
-1. **フォーマットと画質:** 保存形式をPNGからJPEGに変更し、画質（`quality`）を70に設定。
-2. **解像度の固定:** デバイスピクセル比（`device_pixel_ratio`）を `1.0` に固定。
-3. **スクロール上限の絶対値:** 無限スクロールページ対策として、最大スクロール高さを設定（例: 8000px）。上限到達時はスクロールを強制終了して撮影処理に移行する。
-
-## 6. インフラ・デプロイ要件
-* Dockerfile
-* Cloud Run
+* ...
