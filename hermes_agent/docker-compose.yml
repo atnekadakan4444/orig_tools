@@ -1,0 +1,24 @@
+services:
+  hermes-agent:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes-sandbox
+    tty: true
+    stdin_open: true
+    environment:
+      - OPENAI_API_BASE=http://host.docker.internal:11434/v1
+      - OPENAI_API_KEY=ollama
+      - MODEL=qwen3.6:latest
+      - LLM_PROVIDER=openai
+      
+      # Slack連携キー
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_ALLOWED_USERS=${SLACK_ALLOWED_USERS}
+      
+      # 安全のための制限としての暴走（無限ループ）防止
+      - MAX_ITERATIONS=15 
+    volumes:
+      - /Users/nakada/development/orig_tools/hermos_agent:/workspace
+    working_dir: /workspace
+    # 外部ネットワークへのアクセスを制限したい場合は以下のコメントアウトを外す
+    # network_mode: "none"
