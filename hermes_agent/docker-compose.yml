@@ -5,23 +5,39 @@ services:
     tty: true
     stdin_open: true
     environment:
-      - OPENAI_BASE_URL=http://host.docker.internal:11434/v1
-      - OPENAI_API_BASE=http://host.docker.internal:11434/v1
+      # ローカルOllamaはダミーキーで可（実キー不要）
       - OPENAI_API_KEY=ollama
-      - LLM_PROVIDER=openai
-      - MODEL=qwen3.6:latest
-      - OPENAI_MODEL_NAME=qwen3.6:latest
-      - LITELLM_MODEL=qwen3.6:latest
-      
+
       # Slack連携キー
       - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - SLACK_ALLOWED_USERS=${SLACK_ALLOWED_USERS}
-      
+
       # 安全のための制限としての暴走（無限ループ）防止
-      - MAX_ITERATIONS=15 
+      # 注: Hermesが参照する変数名はHERMES_MAX_ITERATIONS（MAX_ITERATIONSは無視される）
+      - HERMES_MAX_ITERATIONS=15
+
+    # 使用モデル・エンドポイントはenvではなく /opt/data/config.yaml が唯一の権威。
+    # その config.yaml を含むHERMES_HOME(/opt/data)をボリュームで永続化しているため、
+    # モデル設定（qwen3.6:latest / provider: ollama / host.docker.internal:11434）は
+    # コンテナ再生成後も維持される。
+
+    # Docker Desktopではデフォルトでもホストへ[host.docker.internal]で到達可能だが、
+    # 環境差異に備えて明示する（Linuxでは必須）。
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     volumes:
-      - /Users/nakada/development/orig_tools/hermos_agent:/workspace
+      # HERMESの設定・状態（config.yaml, memories, sessions等）を永続化
+      - hermes-agent-data:/opt/data
+      # 作業ディレクトリ
+      - /Users/nakada/development/orig_tools/hermes_agent:/workspace
     working_dir: /workspace
     # 外部ネットワークへのアクセスを制限したい場合は以下のコメントアウトを外す
+    # ただしOllama連携にはhost.docker.internalへの到達が必要なため none にはできない
     # network_mode: "none"
+
+volumes:
+  hermes-agent-data:
+    name: hermes-agent-data
+    external: true
