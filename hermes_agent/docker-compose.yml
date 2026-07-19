@@ -17,10 +17,19 @@ services:
       # 注: Hermesが参照する変数名はHERMES_MAX_ITERATIONS（MAX_ITERATIONSは無視される）
       - HERMES_MAX_ITERATIONS=15
 
-    # 使用モデル・エンドポイントはenvではなく /opt/data/config.yaml が唯一の権威。
-    # その config.yaml を含むHERMES_HOME(/opt/data)をボリュームで永続化しているため、
-    # モデル設定（qwen3.6:latest / provider: ollama / host.docker.internal:11434）は
-    # コンテナ再生成後も維持される。
+      # Slackを待ち受けるgateway（メッセージングゲートウェイ）を初回boot時から自動起動する。
+      # このイメージはs6でgatewayスロットを登録するが、新規ボリュームでは既定でDOWN状態
+      # （downファイルが置かれる）となり、誰かが手動起動するまでSlackの待ち受けが始まらない。
+      # そのためコンテナはTUIだけが立ち上がり「エラーは出ないがSlackから疎通できない」状態になる。
+      # この変数を running にすると stage2-hook が gateway_state.json を running で種付けし、
+      # boot時のreconcilerがgatewayスロットを起動する（＝Slack接続が自動で確立する）。
+      # 種付けは gateway_state.json が未作成の初回のみ。以降は永続化された状態が優先される。
+      - HERMES_GATEWAY_BOOTSTRAP_STATE=running
+
+    # 使用モデル・エンドポイントはenvではなく config.yaml が唯一の権威（Hermesの仕様）。
+    # そのため config.yaml をホスト側 ./config.yaml としてbind mountし、composeから
+    # 宣言的に制御する。モデル変更はホストの ./config.yaml を編集して再起動するだけ。
+    # （サーバーに入って書き換える必要はない）
 
     # Docker Desktopではデフォルトでもホストへ[host.docker.internal]で到達可能だが、
     # 環境差異に備えて明示する（Linuxでは必須）。
@@ -28,8 +37,10 @@ services:
       - "host.docker.internal:host-gateway"
 
     volumes:
-      # HERMESの設定・状態（config.yaml, memories, sessions等）を永続化
+      # HERMESの状態（memories, sessions等）を永続化
       - hermes-agent-data:/opt/data
+      # モデル設定はホスト側config.yamlで宣言的に管理（リポジトリで版管理可能）
+      - ./config.yaml:/opt/data/config.yaml
       # 作業ディレクトリ
       - /Users/nakada/development/orig_tools/hermes_agent:/workspace
     working_dir: /workspace
