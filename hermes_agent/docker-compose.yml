@@ -5,10 +5,13 @@ services:
     tty: true
     stdin_open: true
     environment:
+      - OPENAI_BASE_URL=http://host.docker.internal:11434/v1
       - OPENAI_API_BASE=http://host.docker.internal:11434/v1
       - OPENAI_API_KEY=ollama
-      - MODEL=qwen3.6:latest
       - LLM_PROVIDER=openai
+      - MODEL=qwen3.6:latest
+      - OPENAI_MODEL_NAME=qwen3.6:latest
+      - LITELLM_MODEL=qwen3.6:latest
       
       # Slack連携キー
       - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
