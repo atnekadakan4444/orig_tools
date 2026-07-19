@@ -49,6 +49,10 @@ services:
       - ./config.yaml:/opt/data/config.yaml
       # 作業ディレクトリ
       - /Users/nakada/development/orig_tools/hermes_agent:/workspace
+      # Obsidian vault（専用サブフォルダ ALL_IN/Hermes）へ成果物をMarkdown出力。
+      # 標準write_fileツールは HERMES_WRITE_SAFE_ROOT(/opt/data) の外へ書けないため、
+      # /opt/data 配下にマウントしてネイティブ書き込みを許可する。
+      - /Users/nakada/Documents/obsidian/ALL_IN/Hermes:/opt/data/obsidian
     working_dir: /workspace
     # 外部ネットワークへのアクセスを制限したい場合は以下のコメントアウトを外す
     # ただしOllama連携にはhost.docker.internalへの到達が必要なため none にはできない
