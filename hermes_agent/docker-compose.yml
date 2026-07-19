@@ -26,6 +26,12 @@ services:
       # 種付けは gateway_state.json が未作成の初回のみ。以降は永続化された状態が優先される。
       - HERMES_GATEWAY_BOOTSTRAP_STATE=running
 
+      # web検索バックエンドを自前ホストのSearXNGに向ける。
+      # キー未設定時はHermesが無料のddgs(DuckDuckGo)スクレイピングにフォールバックし、
+      # CAPTCHAで恒常ブロックされて検索不能になるため、SearXNGを明示指定する。
+      # 到達先はcompose内サービス名で解決（searxngサービスはポート8080でLISTEN）。
+      - SEARXNG_URL=http://searxng:8080
+
     # 使用モデル・エンドポイントはenvではなく config.yaml が唯一の権威（Hermesの仕様）。
     # そのため config.yaml をホスト側 ./config.yaml としてbind mountし、composeから
     # 宣言的に制御する。モデル変更はホストの ./config.yaml を編集して再起動するだけ。
@@ -47,6 +53,29 @@ services:
     # 外部ネットワークへのアクセスを制限したい場合は以下のコメントアウトを外す
     # ただしOllama連携にはhost.docker.internalへの到達が必要なため none にはできない
     # network_mode: "none"
+
+    # SearXNGが起動してからHermesを立ち上げる（依存順の明示）
+    depends_on:
+      - searxng
+
+  # web検索用のメタ検索エンジン（自前ホスト）。
+  # 複数検索エンジンを束ねて結果を返すため、単一エンジンのCAPTCHAブロックを回避できる。
+  # APIキー不要・完全ローカルで完結する。HermesからはJSON API（/search?format=json）で参照。
+  searxng:
+    image: searxng/searxng:latest
+    container_name: hermes-searxng
+    restart: unless-stopped
+    environment:
+      # secret_key は .env の SEARXNG_SECRET から注入する（秘密はコードに置かない）。
+      # 未設定だと SearXNG は既定値 ultrasecretkey のまま起動を拒否（sys.exit）するため、
+      # :? で未設定を明示的にエラーにして気付けるようにする。
+      - SEARXNG_SECRET=${SEARXNG_SECRET}
+    volumes:
+      # json有効化などの設定を宣言的に管理（同梱既定にマージ）
+      - ./searxng:/etc/searxng:rw
+    ports:
+      # デバッグ用にホストのローカルループバックのみ公開（Hermesからは searxng:8080 で到達）
+      - "127.0.0.1:8888:8080"
 
 volumes:
   hermes-agent-data:

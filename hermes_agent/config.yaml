@@ -15,6 +15,12 @@ terminal:
   container_persistent: true
 browser:
   inactivity_timeout: 120
+web:
+  # web検索バックエンドを自前ホストのSearXNGに固定する。
+  # 未指定だとキーの有無で自動検出され、キー無しの本環境では無料のddgs(DuckDuckGo)に落ちて
+  # CAPTCHAで恒常ブロックされるため、明示指定でSearXNG経由に固定する。
+  # 実際の到達先は env SEARXNG_URL（compose側で http://searxng:8080 を注入）。
+  backend: searxng
 tool_loop_guardrails:
   warnings_enabled: true
   hard_stop_enabled: false

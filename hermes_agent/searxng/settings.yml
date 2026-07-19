@@ -1,0 +1,20 @@
+# SearXNG設定 — Hermes Agentの検索バックエンド用（内部利用）
+# 既定設定にマージする（use_default_settings）。
+# 秘密情報はこのファイルに書かず、secret_key は環境変数 SEARXNG_SECRET で注入する
+# （docker-compose → .env 経由）。同梱の既定 searx/settings.yml は formats を html のみに
+# 制限しているため、HermesのJSON API利用に必要な json をここで明示的に有効化する。
+use_default_settings: true
+
+search:
+  # HermesはSearXNGのJSON API（/search?format=json）を叩くため json を有効化（既定は html のみ）
+  formats:
+    - html
+    - json
+
+server:
+  # secret_key は ${SEARXNG_SECRET} で上書きされる（このファイルには秘密を置かない）
+  secret_key: "ultrasecretkey"
+  # 単一の内部利用者（Hermesコンテナ）専用のためレート制限・公開機能は無効
+  limiter: false
+  public_instance: false
+  image_proxy: false
