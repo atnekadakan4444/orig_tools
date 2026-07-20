@@ -58,6 +58,9 @@ services:
       # bind mountしないとリポジトリ側が「編集しても効かない死んだコピー」になり二重管理になるため。
       # 編集 → 新規セッションから反映（SOUL.mdはセッション開始時にシステムプロンプトへ読み込まれる）。
       - ./SOUL.md:/opt/data/SOUL.md
+      # 自作スキル（指示テンプレート）もホスト側を唯一のソースにする。
+      # SKILL.mdを編集すれば即反映され、Git管理が実効を持つ（SOUL.mdと同じ方針）。
+      - ./skills:/opt/data/skills/custom
       # 作業ディレクトリ
       - /Users/nakada/development/orig_tools/hermes_agent:/workspace
       # Obsidian vault（専用サブフォルダ ALL_IN/Hermes）へ成果物をMarkdown出力。

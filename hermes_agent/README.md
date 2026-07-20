@@ -149,7 +149,51 @@ docker exec hermes-sandbox hermes cron runs           # 結果を履歴で確認
 
 ---
 
-## 現在登録されているジョブ（2026-07-20 時点）
+## 運用方針: Skill による手動実行（cron は廃止）
+
+**2026-07-20 に cron ジョブは全廃し、指示テンプレートを Skill 化して手動実行する運用に移行した。**
+
+理由: 手動実行が主体なら、指示が `jobs.json` に閉じ込められる cron より、Skill の方が扱いやすい。
+Skill は SKILL.md を編集するだけで即反映され、対象を呼び出し時に指定でき、Git 管理が実効を持つ。
+
+### 現在の Skill（`hermes_agent/skills/` = 唯一のソース）
+
+| Skill | 用途 | 出力先 |
+|---|---|---|
+| `subculture-research` | サブカル領域の困りごとを **browser で実ページ精読**して調査（調査専任・企画案は書かない）。**対象領域は呼び出し時に指定** | `deep-research/<領域>/` |
+| `subculture-digest` | 収集スクリプトのバズ指標データから個人開発ネタを選定 | `subculture/` |
+| `tech-news-ideas` | テックニュースから個人開発ネタを選定 | `tech/` |
+
+`./skills` を `/opt/data/skills/custom` に bind mount しているため、**SKILL.md を編集すれば即反映**される
+（`SOUL.md` と同じ方針。死んだコピーにならない）。
+
+### 使い方
+
+Slack で自然に頼むか、CLI ワンショットで実行する。
+
+```
+# Slack（主インターフェース）
+「subculture-research で 推し活 を調査して」
+「同じ手順でコスプレ領域も調べて」      ← 新領域もその場で指定できる
+```
+
+```bash
+# CLI ワンショット
+docker exec hermes-sandbox hermes -z "subculture-research スキルで同人活動を調査して" --yolo
+```
+
+```bash
+# Skill の確認
+docker exec hermes-sandbox hermes skills list
+```
+
+> 旧 cron ジョブ 7 本の定義は `hermes_agent/cron/jobs.json` にバックアップとして残してある（復元用）。
+> 再び定期実行したくなった場合は `hermes cron create ... --skill <スキル名>` で Skill を cron に紐付けられる。
+
+<details>
+<summary>旧 cron ジョブ構成（2026-07-20 廃止・参考）</summary>
+
+## 旧: 登録されていたジョブ
 
 | ジョブ名 | ID | スケジュール | 出力先サブフォルダ | 方式 |
 |---|---|---|---|---|
@@ -194,6 +238,8 @@ docker exec hermes-sandbox hermes cron list                  # 確認
 docker exec hermes-sandbox hermes cron run <job_id>          # 手動発火（テスト）
 docker exec hermes-sandbox hermes cron remove <job_id>       # 削除
 ```
+
+</details>
 
 ---
 
