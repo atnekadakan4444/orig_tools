@@ -1,6 +1,11 @@
 services:
   hermes-agent:
-    image: nousresearch/hermes-agent:latest
+    # Chromium + agent-browser を焼き込んだカスタムイメージ（Dockerfile参照）。
+    # 素のイメージにはブラウザが無く、note/はてな等の本文抽出ができないため。
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hermes-agent-browser:latest
     container_name: hermes-sandbox
     tty: true
     stdin_open: true
@@ -15,7 +20,9 @@ services:
 
       # 安全のための制限としての暴走（無限ループ）防止
       # 注: Hermesが参照する変数名はHERMES_MAX_ITERATIONS（MAX_ITERATIONSは無視される）
-      - HERMES_MAX_ITERATIONS=15
+      # 15だと多領域web検索+分析+保存の重いリサーチが途中で打ち切られるため40に緩和
+      # （ローカルOllamaのため金銭コストは無く、増えるのは実行時間のみ。config.max_turnsは60）
+      - HERMES_MAX_ITERATIONS=40
 
       # Slackを待ち受けるgateway（メッセージングゲートウェイ）を初回boot時から自動起動する。
       # このイメージはs6でgatewayスロットを登録するが、新規ボリュームでは既定でDOWN状態

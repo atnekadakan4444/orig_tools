@@ -18,3 +18,20 @@ server:
   limiter: false
   public_instance: false
   image_proxy: false
+
+# エンジン構成の安定化。
+# データセンターIPからの検索では以下のエンジンがCAPTCHA/レート制限/破損で常時失敗し、
+# エラーを撒いて集約結果を0件に巻き込むため無効化する（2026-07-20 実測）。
+# 日本語クエリで安定して結果を返すのは Bing のため、Bingを主軸に据える。
+engines:
+  - name: duckduckgo
+    disabled: true      # CAPTCHA (wt-wt)
+  - name: startpage
+    disabled: true      # JSONDecodeError（エンジン破損）
+  - name: qwant
+    disabled: true      # CAPTCHA
+  - name: brave
+    disabled: true      # Suspended: too many requests
+  # Bingは既定で有効。明示して主軸であることを示す。
+  - name: bing
+    disabled: false
