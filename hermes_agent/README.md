@@ -156,9 +156,28 @@ docker exec hermes-sandbox hermes cron runs           # 結果を履歴で確認
 | 個人開発ネタ収集(Obsidian) | `03959a6c7ef5` | `every 360m` | `tech/` | web_search |
 | サブカル個人開発ネタ収集 | `99b86793e172` | `every 360m` | `subculture/` | `--script` 注入 |
 | VTuber困りごと発アプリ案 | `4607f73e1a4b` | `0 0 * * *`（JST 9時） | `vtuber-painpoints/` | web_search |
+| 調査:推し活 | `68ac36a46e9c` | `0 20 * * *`（JST 5時） | `deep-research/oshikatsu/` | browser 精読 |
+| 調査:同人活動 | `1485678190f2` | `0 21 * * *`（JST 6時） | `deep-research/doujin/` | browser 精読 |
+| 調査:トレーディングカードゲーム | `04741e688528` | `0 22 * * *`（JST 7時） | `deep-research/tcg/` | browser 精読 |
+| 調査:VTuber視聴・切り抜き制作 | `b8b89a5cc84f` | `0 23 * * *`（JST 8時） | `deep-research/vtuber/` | browser 精読 |
 
 いずれも成果物は `/opt/data/obsidian/<サブフォルダ>` に frontmatter 付き Markdown 保存 → Obsidian vault
 （`ALL_IN/Hermes/<サブフォルダ>`）に直結、配信は `slack:C0BJAGX6ZSN`。すべて動作確認済み。
+
+### 「調査:*」ジョブの設計思想（Hermes=調査専任 / まとめは別担当）
+
+`調査:*` の 4 本は **Hermes に調査だけを念入りにやらせ、最終的な分析・企画案は別（Claude 等）が担当する**
+という分担で作られている。1 回の実行を **1 領域に限定**しているのが要点で、4 領域を 1 プロンプトに詰めると
+qwen3.6 が破綻し、検索スニペットへの退行やプレースホルダ URL の捏造が起きることを実測で確認したため。
+
+各ジョブのプロンプトに課している制約:
+
+- **browser ツールで実ページを最低 3 件精読**し、本文の記述に基づいて困りごとを抽出する
+- **プレースホルダ URL（`xxxx` 等）や「検索結果より」という記載を明示的に禁止**
+- 読めなかったページの内容を推測で書かない／件数を水増ししない
+- **企画案・MVP 案・解決策は書かない**（調査素材に徹する）
+- 末尾に「実際に本文を読めたページ数」と「読めなかった/除外したページ」を正直に記載させる
+- 実行時刻を 1 時間ずつずらし、同時実行の競合を回避（1 本あたり 20〜30 分かかる）
 
 ### Cron ごとの出力先フォルダ分け
 
@@ -250,16 +269,110 @@ docker exec hermes-sandbox hermes cron create "every 6h" \
 | ジョブが発火しない | `hermes cron status` で gateway を確認。停止時は `docker compose up -d` |
 | `Write denied ... outside HERMES_WRITE_SAFE_ROOT` | 保存先を `/opt/data` 配下（例: `/opt/data/obsidian`）にする |
 | Web検索が空/ブロック | SearXNG コンテナ稼働を確認（`docker compose ps`）。`SEARXNG_URL=http://searxng:8080` |
-| 成果物が途中で切れる | `HERMES_MAX_ITERATIONS`（15）の上限。プロンプトの手数を減らす |
+| 成果物が途中で切れる | `HERMES_MAX_ITERATIONS`（現在 40）の上限。プロンプトの手数を減らすか上限を上げる |
 | 「APIキーが必要」と言われる | 誤案内。ローカル Ollama で鍵不要（`SOUL.md` に前提を明記済み） |
+| 検索が辞書/用語解説ばかりで生の声に届かない | SearXNG のエンジン劣化。`searxng/settings.yml` を確認（CAPTCHA 常習エンジンは無効化済み、Bing 主軸） |
+| レポートに `xxxx` 等のプレースホルダURLが混じる | LLM の捏造。プロンプトに「プレースホルダ禁止・実際に開いたURLのみ」を明記し、1 実行 1 領域に絞る |
 
-## 参考: 主要な設定ファイルの場所
+## 設定ファイル構成 — どこを編集すると何が変わるか
+
+Hermes の設定は **3 つの層**に分散している。ここを押さえないと「どこを直せばいいのか」が分からなくなる。
+
+```
+① ホスト側 hermes_agent/          ← Git管理下・編集の主戦場
+   ├─ docker-compose.yml          （環境変数・マウント・実行制限）
+   ├─ Dockerfile                  （使える"能力"そのもの: Chromium/agent-browser）
+   ├─ config.yaml         ──┐bind mount（モデル・エージェント挙動）
+   ├─ SOUL.md             ──┤bind mount（行動指針＝ここが唯一のソース）
+   ├─ searxng/settings.yml   │     （検索エンジン構成）
+   ├─ scripts/*.py           │     （収集ロジック／要手動デプロイ）
+   └─ cron/jobs.json         │     （②のスナップショット・復元用）
+                             │
+② 永続ボリューム /opt/data ←─┘   ← 再作成で消えない・ただしGit管理外
+   ├─ SOUL.md                     （恒久的な行動指針＝CLAUDE.md相当）
+   ├─ config.yaml                 （①からマウントされた実体）
+   ├─ cron/jobs.json              （ジョブごとの指示＝プロンプト）
+   ├─ scripts/                    （cron --script の解決先）
+   ├─ skills/ memories/ hooks/ profiles/
+   └─ obsidian/                   （Obsidian vault へのマウント）
+
+③ イメージ層（/opt/hermes 等）    ← 再作成で消える
+   └─ 永続化したいものは①のDockerfileに書く
+```
+
+### 「行動指針を指示する」ならここ
+
+| やりたいこと | 編集先 | 効き方 |
+|---|---|---|
+| **常に効く人格・方針**（例:「成果物はObsidianへ」「次の行動を提案せよ」） | `hermes_agent/SOUL.md`（bind mount で `/opt/data/SOUL.md` の実体） | システムプロンプトに注入。**新規セッションから**有効 |
+| **タスク個別の指示** | cron ジョブの prompt（`hermes cron edit <id> --prompt "..."`） | そのジョブ実行時のみ |
+| モデル/推論の性格 | `config.yaml` の `agent:`（`reasoning_effort`, `personalities`） | 再起動後 |
+| 記憶の扱い | `config.yaml` の `memory:` ＋ `/opt/data/memories/` | 再起動後 |
+| スキル追加 | `/opt/data/skills/`（`hermes skills` で管理） | — |
+
+### 「制限する」ならここ
+
+| 制限したいこと | 編集先 | 現在値 |
+|---|---|---|
+| **暴走防止（反復回数）** | `docker-compose.yml` → `HERMES_MAX_ITERATIONS` | 40 |
+| 会話ターン上限 | `config.yaml` → `agent.max_turns` | 60 |
+| **書き込み可能範囲** | env `HERMES_WRITE_SAFE_ROOT` | `/opt/data`（外は `write_file` 拒否） |
+| ツールループの空回り検知 | `config.yaml` → `tool_loop_guardrails` | warn/hard_stop 閾値 |
+| コード実行の制限 | `config.yaml` → `code_execution`（timeout, max_tool_calls） | 300s / 50回 |
+| 委譲の上限 | `config.yaml` → `delegation.max_iterations` | 50 |
+| ツール自体の禁止 | **ジョブの prompt で明示**（例「execute_code を使うな」） | cron では `execute_code` は自動ブロック |
+
+### 落とし穴
+
+1. **モデル指定は `config.yaml` が唯一の権威** — compose の `MODEL` 等の環境変数は参照されず無視される。
+2. **`SOUL.md` は新規セッションからしか効かない** — 実行中の会話には反映されない。
+3. **`/opt/data` は Git 管理外** — ただし `config.yaml` と `SOUL.md` は bind mount でホスト側（Git 管理下）が
+   実体になっている。`cron/jobs.json` だけはスナップショット運用（理由は下記）。
+4. **`scripts/` は自動同期されない** — ホストの `scripts/` は手動 `docker cp` が必要。
+5. **cron `--prompt` はプロンプト全文を置換**（部分編集ではない）。
+
+### SOUL.md は bind mount（リポジトリが唯一のソース）
+
+行動指針の `SOUL.md` は `config.yaml` と同じく **ホスト側 `hermes_agent/SOUL.md` を bind mount** している。
+
+```yaml
+- ./SOUL.md:/opt/data/SOUL.md
+```
+
+- **リポジトリのファイルを編集すれば、それがそのまま実体**（`docker cp` 不要、コンテナ側に即反映）。
+- 反映タイミングは **新規セッションから**（SOUL.md はセッション開始時にシステムプロンプトへ読み込まれるため、
+  実行中の会話には効かない）。
+- bind mount しないとリポジトリ側が「編集しても効かない死んだコピー」になり二重管理・ドリフトの原因になる。
+  同じ理由で `config.yaml` も bind mount している。
+
+### cron ジョブ定義のバックアップ（こちらはスナップショット運用）
+
+`cron/jobs.json` は **bind mount していない**。Hermes が実行のたびに `next_run_at` / `last_run_at` /
+`last_status` を書き換えるため、bind mount すると git diff が常時汚れ続けるから。
+こちらは「ソースではなく純粋なバックアップ」と割り切り、必要な時にエクスポートする。
+
+```bash
+# 【エクスポート】コンテナ → リポジトリ（ジョブを増減したら実行）
+docker cp hermes-sandbox:/opt/data/cron/jobs.json hermes_agent/cron/jobs.json
+
+# 【復元】リポジトリ → コンテナ（ボリューム作り直し後など）
+docker cp hermes_agent/cron/jobs.json hermes-sandbox:/opt/data/cron/jobs.json
+docker compose restart hermes-agent      # cron スケジューラに再読込させる
+```
+
+> `/opt/data` は external な永続ボリュームなので `docker compose down -v` でも消えないが、
+> `docker volume rm hermes-agent-data` や Docker Desktop の "Clean / Purge data" では失われる。
+> その場合 `memories/` `sessions/` `state.db`（会話履歴）は復元できない点に注意。
+
+### 参考: 主要な設定ファイルの場所
 
 | 内容 | パス |
 |---|---|
 | モデル/エンドポイント設定 | `hermes_agent/config.yaml`（コンテナ `/opt/data/config.yaml`） |
-| 永続コンテキスト（CLAUDE.md 相当） | コンテナ `/opt/data/SOUL.md` |
-| cron ジョブ定義 | コンテナ `/opt/data/cron/jobs.json` |
+| 永続コンテキスト（CLAUDE.md 相当） | コンテナ `/opt/data/SOUL.md`（Git: `hermes_agent/SOUL.md`） |
+| cron ジョブ定義 | コンテナ `/opt/data/cron/jobs.json`（Git: `hermes_agent/cron/jobs.json`） |
 | cron 実行履歴 | コンテナ `/opt/data/cron/executions.db` |
 | 収集スクリプト（cron `--script`） | Git: `hermes_agent/scripts/` ↔ コンテナ `/opt/data/scripts/`（`$HERMES_HOME/scripts`） |
+| ブラウザ能力（Chromium/agent-browser） | `hermes_agent/Dockerfile`（イメージに焼き込み） |
+| 検索エンジン構成 | `hermes_agent/searxng/settings.yml` |
 | Obsidian 出力先 | `/opt/data/obsidian` ↔ ホスト `~/Documents/obsidian/ALL_IN/Hermes` |

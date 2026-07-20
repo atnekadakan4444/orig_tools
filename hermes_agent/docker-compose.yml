@@ -54,6 +54,10 @@ services:
       - hermes-agent-data:/opt/data
       # モデル設定はホスト側config.yamlで宣言的に管理（リポジトリで版管理可能）
       - ./config.yaml:/opt/data/config.yaml
+      # 行動指針(CLAUDE.md相当)もホスト側を唯一のソースにする。
+      # bind mountしないとリポジトリ側が「編集しても効かない死んだコピー」になり二重管理になるため。
+      # 編集 → 新規セッションから反映（SOUL.mdはセッション開始時にシステムプロンプトへ読み込まれる）。
+      - ./SOUL.md:/opt/data/SOUL.md
       # 作業ディレクトリ
       - /Users/nakada/development/orig_tools/hermes_agent:/workspace
       # Obsidian vault（専用サブフォルダ ALL_IN/Hermes）へ成果物をMarkdown出力。
