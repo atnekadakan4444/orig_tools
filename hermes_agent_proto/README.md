@@ -102,6 +102,36 @@ docker exec hermes-proto curl -s http://host.docker.internal:11434/api/tags
 いずれも既定で有効（`memory_enabled` / `user_profile_enabled` がデフォルト `true`）。
 無効化したい場合は `data/config.yaml` に `memory:` セクションを足す。
 
+### 観測対象を3つに絞っている理由
+
+`data/` 配下には 50MB 近い実行時ファイルが並ぶが、**観測対象にするのは次の3つだけ**。
+
+| 対象 | 何が分かるか |
+|---|---|
+| `data/memories/*.md` | **学習の結果**。次回のシステムプロンプトに注入される内容そのもの |
+| `data/session-exports/*.md` | **学習の原因**。どの発言のどのツール呼び出しが記憶を書いたか |
+| `data/state.db` の `messages` / `sessions` | **一次ソース**。全会話の生ログ（上2つはここからの派生） |
+
+この3つで「入力（会話）→ 契機（memory ツール呼び出し）→ 出力（注入される記憶）」の因果が閉じる。
+残りを外しているのは手抜きではなく、**次の理由でいずれも「会話の前後で変化した学習内容」を含まないため**。
+
+| 除外するもの | サイズ | 除外理由 |
+|---|---|---|
+| `data/skills/` | 6.4 MB | イメージ同梱の 18 カテゴリ・69 skill。**毎回の boot で `skills_sync.py` により同梱版から再同期される**ので、会話とは無関係に差分が出る。版管理するとベンダーのコードを丸ごと抱え込む |
+| `data/home/` | 26 MB | コンテナ内 `hermes` ユーザーの HOME。シェル履歴や各種ドットファイルで、学習内容ではない |
+| `data/bin/`, `data/lazy-packages/` | 19 MB | ツールが遅延インストールしたバイナリ・パッケージ。実行環境であって学習ではない |
+| `data/*_cache.json`, `data/cache/` | 3.4 MB | モデル一覧やコンテキスト長のキャッシュ。外部 API の応答であり会話に依存しない |
+| `data/logs/` | 36 KB | `agent.log` / `errors.log`。**タイムスタンプと内部トレースが毎回変わるため差分が常時汚れる**。会話の中身は state.db に構造化して入っており、こちらを読む理由がない |
+| `data/state.db-wal`, `-shm` | 変動 | SQLite の WAL / 共有メモリ。`state.db` の内容が二重に現れるだけで、コンテナ稼働中は中身が不定 |
+| `data/sessions/`, `cron/`, `hooks/`, `plans/`, `backups/` | 0 B | この構成では**常に空**。CLI 専用でゲートウェイも cron も動かさないため使われない |
+| `data/config.yaml.bak-*` | 2 KB | 初回 boot のスキーマ移行で退避された旧 config。1度きりの生成物 |
+| `data/.env` | — | 秘密情報の置き場（`chmod 600`）。Ollama 利用のため実キーは不要だが、**版管理に載せてはいけない**ため常に除外 |
+
+**例外的に対象へ加える価値があるのは `data/skills/` だけ。** Hermes は会話中に skill を自作でき
+（`hermes journey` の `stats.learned_skills` がその数を返す）、成果物はここに落ちる。
+ただし同梱 69 件のノイズに埋もれるので、追うなら**自作分のサブディレクトリだけ**を
+`.gitignore` の否定パターンで拾うこと。同梱分ごと版管理するのは避ける。
+
 ### 手順: 記憶を版管理して差分を見る
 
 `.gitignore` に1行足して `data/memories/` を版管理対象に含める。
@@ -112,6 +142,12 @@ data/*
 !data/SOUL.md
 !data/memories/          ← 追加
 ```
+
+**版管理に載せるのは `data/memories/` だけでよい。** 3つの観測対象のうち残り2つを外すのは、
+`data/state.db` がバイナリで `git diff` が効かない（SQLite で都度クエリする方が早い）ためと、
+`data/session-exports/` が必要なときにコマンドで再生成できる派生物であり、
+かつ `memories/` の差分を見た後に「原因」を掘るための道具だから。
+`memories/` だけがテキストで、かつ会話ごとに確実に変化する。
 
 あとは会話のたびにコミットして差分を取る。
 
