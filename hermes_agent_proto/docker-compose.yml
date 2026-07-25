@@ -1,7 +1,10 @@
 services:
-  hermes-agent-proto:
+  # service名とcontainer_nameを揃えてある。揃えないと
+  # `docker compose exec <service名>` と `docker exec <container名>` で
+  # 指定すべき名前が変わり、"service is not running" で混乱するため。
+  # 本番構成（hermes_agent/）のコンテナ名 hermes-sandbox とは衝突しない。
+  hermes-proto:
     image: nousresearch/hermes-agent:latest
-    # 本番構成（hermes_agent/）のコンテナ名 hermes-sandbox と衝突させない。
     container_name: hermes-proto
     tty: true
     stdin_open: true
