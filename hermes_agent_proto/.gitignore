@@ -1,0 +1,5 @@
+# /opt/data の実体。実行時の状態（memories, sessions, logs, .env 等）は版管理しない。
+data/*
+# 設定と行動指針だけは版管理する（これらがこの構成の宣言的なソース）。
+!data/config.yaml
+!data/SOUL.md

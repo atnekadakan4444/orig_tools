@@ -1,0 +1,45 @@
+services:
+  hermes-agent-proto:
+    image: nousresearch/hermes-agent:latest
+    # 本番構成（hermes_agent/）のコンテナ名 hermes-sandbox と衝突させない。
+    container_name: hermes-proto
+    tty: true
+    stdin_open: true
+    environment:
+      # ローカルOllamaはダミーキーで可（実キー不要）
+      - OPENAI_API_KEY=ollama
+
+      # 安全のための制限としての暴走（無限ループ）防止
+      # 注: Hermesが参照する変数名はHERMES_MAX_ITERATIONS（MAX_ITERATIONSは無視される）
+      - HERMES_MAX_ITERATIONS=15
+
+      # コンテナ内 hermes ユーザーの UID/GID をホストユーザー(501:20)に合わせる。
+      # /opt/data をホストの ./data に bind mount しているため、これを合わせないと
+      # コンテナが作ったファイルをホスト側から素のまま編集できなくなる。
+      # イメージの stage2-hook.sh がこの値で usermod + 対象を絞った chown を行う。
+      - HERMES_UID=501
+      - HERMES_GID=20
+
+      # 注: HERMES_GATEWAY_BOOTSTRAP_STATE は意図的に設定しない。
+      # 未設定ならゲートウェイ（Slack待ち受け / cronスケジューラ）は既定の DOWN のままで、
+      # CLI だけが動く。プレーンな検証用途にはこれで十分。
+
+    # 使用モデル・エンドポイントはenvではなく /opt/data/config.yaml が唯一の権威。
+    # 下記の bind mount により、その実体はホストの ./data/config.yaml になる。
+
+    # Docker Desktopではデフォルトでもホストへ[host.docker.internal]で到達可能だが、
+    # 環境差異に備えて明示する（Linuxでは必須）。
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    volumes:
+      # HERMES_HOME(/opt/data) を丸ごとホスト側にbind mountする。
+      # config.yaml だけでなく memories / sessions / logs もホストから直接読めるため、
+      # 素の挙動を検証する用途に適する（本番構成は名前付きボリューム + 個別ファイルbind）。
+      # イメージ側もこの使い方を想定しており、初回bootで必要なディレクトリと
+      # config.yaml / SOUL.md / .env を自動生成する（既存ファイルは上書きしない）。
+      - ./data:/opt/data
+
+    # エージェントの作業ディレクトリ。HERMES_WRITE_SAFE_ROOT=/opt/data の内側なので
+    # 標準の write_file ツールがそのまま通る（/opt/data の外へは書き込めない仕様）。
+    working_dir: /opt/data/workspace
